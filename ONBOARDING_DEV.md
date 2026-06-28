@@ -72,69 +72,67 @@ curl http://localhost:8000/health
 
 ---
 
-## O que está implementado
+## O que está funcionando em produção — revisar antes de começar
 
-### ✅ Funcionando em produção
+Antes de implementar qualquer coisa nova, valide que esses painéis estão operando corretamente:
 
-| Módulo | Localização | Descrição |
-|---|---|---|
-| Options Flow stream | `app/options_flow/stream.py` | Stream ThetaData em tempo real |
-| Options Flow enrichment | `app/options_flow/enrichment.py` | IV, SOFR, métricas derivadas |
-| Options Flow state | `app/options_flow/state.py` | Estado da sessão |
-| Options Flow router | `app/options_flow/router.py` | Endpoints REST/SSE |
-| Intraday | `app/intraday/router.py` | Dados intraday (Greeks, GEX) |
-| ThetaData client | `app/providers/thetadata/client.py` | Cliente HTTP |
-| Jobs EOD | `app/jobs/` | netdrift, iv_eod, vol_intraday, vol_eod |
-| Auth | `app/auth.py` | Autenticação de requests |
-| Cache | `app/cache/` | Cache de respostas |
+| Painel | Observação |
+|---|---|
+| Greeks Profile | Funcionando |
+| Strike Map | Funcionando |
+| Day Levels | Funcionando |
+| Flow Tape | Tab dentro de Options Flow |
+| MAG7 Flow | Tab dentro de Options Flow |
+
+QQQ Cockpit e SPY Cockpit se conectam automaticamente — não requerem implementação adicional.
 
 ---
 
-## O que precisa ser implementado
+## Ordem de prioridades — o que implementar
 
-### 🔴 Hedge Flow (prioridade 1)
+### 1. Flow Minute + Minute Bar (dentro de Options Flow)
+Tab já existente no frontend mas com implementação pendente no backend.
+Minute Bar = 1 barra por minuto de NET FLOW acumulado.
+Solicitar spec ao owner.
 
-Novo painel que mostra posicionamento de dealers baseado em Greek exposure.
-
-**Spec completo:** solicitar `HEDGE_FLOW_BACKEND_SPEC_V1.4.md` ao owner.
+### 2. Hedge Flow
+Novo painel de posicionamento de dealers baseado em Greek exposure.
+Spec completo disponível: solicitar `HEDGE_FLOW_BACKEND_SPEC_V1.4.md` ao owner.
 
 Resumo técnico:
 - Consome Greeks EOD + OI do ThetaData
 - Calcula Dealer Delta, Gamma Exposure por strike
-- Jobs de fechamento RTH: ~15:59 ET (preliminar) e ~17:15 ET (oficial)
+- Jobs de fechamento: ~15:59 ET (preliminar) e ~17:15 ET (oficial)
 - Rota: `GET /api/hedge-flow?symbol=QQQ`
 
-### 🔴 Overnight Positioning (prioridade 2)
-
-Painel pré-market (04:00–09:30 ET) que mostra posicionamento overnight dos dealers.
-
-**Spec completo:** solicitar `OVERNIGHT_POSITIONING_BACKEND_SPEC_V1.0.md` ao owner.
+### 3. Overnight Positioning
+Painel pré-market (04:00–09:30 ET) de posicionamento overnight dos dealers.
+Spec completo disponível: solicitar `OVERNIGHT_POSITIONING_BACKEND_SPEC_V1.0.md` ao owner.
 
 Resumo técnico:
 - Polling de OI a cada 2min a partir de 06:25 ET
-- Calcula Dealer Delta @ Close e @ Projected Open
 - Jobs A, B2, C, D (ver spec)
 - Rota: `GET /api/overnight?symbol=QQQ&expiration_scope=ALL_45DTE`
 
-### 🟡 Volatilidade + ML (prioridade 3)
+### 4. Volatilidade
+Melhorias no painel existente.
+Docs de handoff: solicitar `DEV_VOLATILIDADE_MELHORIAS.md` e `DEV_SNAPSHOTS_VOL.md` ao owner.
 
-Melhorias nos painéis de Volatilidade e ML Panel.
+### 5. ML Panel
+Melhorias no painel existente.
+Doc de handoff: solicitar `DEV_ML_PANEL.md` ao owner.
 
-**Docs de handoff:** solicitar `DEV_VOLATILIDADE_MELHORIAS.md`, `DEV_SNAPSHOTS_VOL.md`, `DEV_ML_PANEL.md` ao owner.
+### 6. Market Setup
+Novo painel. Solicitar spec ao owner.
 
-Status: não confirmado se melhorias foram implementadas antes da transição.
-
-### 🔴 Dark Pool (prioridade 4)
-
-Atualmente 100% mock no frontend. Depende do QuantData API.
-
-**Pendência:** contrato com QuantData não fechado em 27/06/2026. Confirmar com owner.
+### 7. Dark Pool
+Atualmente 100% mock no frontend.
+Depende de contrato com QuantData API (pendente com owner).
+Não implementar backend até contrato fechado — confirmar com owner antes de iniciar.
 
 ---
 
 ## Terminologia do produto
-
-Termos que você vai encontrar nos specs e no código:
 
 | Termo | Significado |
 |---|---|
@@ -158,7 +156,7 @@ Termos que você vai encontrar nos specs e no código:
 - **Owner:** Paulo Padovani
 - **Plataforma:** gexflowoptions.com.br
 - **Coolify:** coolify.gexflowoptions.com.br
-- **Specs de produto:** solicitar ao owner (congelados e documentados)
+- **Specs de produto:** solicitar ao owner (todos documentados e congelados)
 - **Frontend:** gerenciado via Lovable (owner tem acesso)
 
 ---
@@ -167,7 +165,7 @@ Termos que você vai encontrar nos specs e no código:
 
 1. Leia os specs antes de implementar qualquer endpoint
 2. Implemente localmente e teste com `curl` ou Postman
-3. Push para o repo GitHub
-4. Deploy via Coolify (redeploy manual ou automático)
+3. Push para o repo `midgard-api` no GitHub
+4. Deploy via Coolify (redeploy manual)
 5. Verifique `/health` após deploy
 6. Confirme com o owner que o painel no frontend está consumindo corretamente
